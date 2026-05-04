@@ -3,6 +3,7 @@ from discord.ext import commands
 import os
 import asyncio
 import logging
+from threading import Thread
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -55,6 +56,24 @@ async def main():
         await load_cogs()
         await bot.start(TOKEN)
 
+def keep_alive():
+    """Simple HTTP server to satisfy Render's port requirement"""
+    from http.server import HTTPServer, BaseHTTPRequestHandler
+    
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"Bot is running!")
+    
+    port = int(os.environ.get("PORT", 10000))
+    server = HTTPServer(('0.0.0.0', port), Handler)
+    server.serve_forever()
+
+# Start HTTP server in background
+Thread(target=keep_alive, daemon=True).start()
+
+# Then run your bot
 if __name__ == "__main__":
     print("🚀 Starting Voice XP Bot...")
     asyncio.run(main())
